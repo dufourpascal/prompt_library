@@ -1,7 +1,7 @@
+import re
 import streamlit as st
 # from streamlit_card import card
 from st_copy_to_clipboard import st_copy_to_clipboard as clipboard
-from streamlit_card import card
 
 from db import get_engine, Prompt, Category, PromptCategoryLink
 from sqlmodel import Session, select
@@ -25,7 +25,6 @@ def get_categories() -> dict[str, int]:
         categories_formatted = {category.name_en: category.id for category in categories}
         return categories_formatted
 
-
 # @st.cache_data()
 def get_prompts(category_id: int) -> list[(str, str, str)]:
     engine = create_enginge()
@@ -35,29 +34,91 @@ def get_prompts(category_id: int) -> list[(str, str, str)]:
         prompts_formatted = [(prompt.Prompt.name_en, prompt.Prompt.description_en, prompt.Prompt.text_en) for prompt in prompts]
         return prompts_formatted
 
+def get_variables(prompt):
+    variables = {}
 
-# @st.experimental_dialog("Copy your prompt", width="large")
+    matches = re.findall(r"\{(\w+)(?::\s*([^}]+))?\}", prompt)
+    for match in matches:
+        variable = match[0]
+        values = match[1].split("|") if match[1] else []
+        variables[variable] = values
+    print("returned variables", variables)
+    return variables
+
+def has_variables(prompts):
+    return len(get_variables(prompts)) > 0
+
+def replace_variables(prompt_text, variables):
+    pattern = r"\{(\w+)(?::\s*([^}]+))?\}"
+    
+    def replacer(match):
+        variable = match.group(1)
+        if variable in variables:
+            variable_value = st.session_state.get(variable, "")
+            if variable_value == "Other" or variable_value == "Andere":
+                variable_value = st.session_state.get(variable+"_other", "")
+            return variable_value
+        else:
+            return match.group(0)  # If no replacement is found, return the original match
+
+    def replacer_formatted(match):
+        variable = match.group(1)
+        if variable in variables:
+            variable_value = st.session_state.get(variable, "")
+            if variable_value == "Other" or variable_value == "Andere":
+                variable_value = st.session_state.get(variable+"_other", "")
+            
+            variable_value = f":orange-background[{variable_value}]"
+            return variable_value
+        else:
+            return match.group(0)  # If no replacement is found, return the original match
+    
+    result = re.sub(pattern, replacer, prompt_text)
+    result_formatted = re.sub(pattern, replacer_formatted, prompt_text)
+    result_formatted = result_formatted.replace("\n", "  \n")
+    return result, result_formatted
+
+
+def show_variable_options(variables):
+    for variable, values in variables.items():
+        if len(values) > 0:
+            label = variable.replace("_", " ").capitalize()
+            other_value = "Other"
+            value_selected = st.selectbox(label, [*values, other_value], key=variable)
+            if value_selected == other_value:
+                st.text_input(label, key=variable+"_other")
+        else:
+            st.text_input(variable, key=variable)
+
+@st.experimental_dialog("Copy your prompt!", width="large", )
 def show_prompt(prompt_name, prompt_description, prompt_text):
-    print("clicked", prompt_name)
-    # st.subheader(prompt_name)
-    # st.text(prompt_description)
+    st.subheader(prompt_name)
+    st.write(prompt_description)
 
-    # with st.container(border=True):
-    #     st.write(prompt_text)
-    # clipboard(prompt_text, before_copy_label="Copy to clipboard", after_copy_label="Copied!")
+    if has_variables(prompt_text):
+        print("Has variables")
+        variables = get_variables(prompt_text)
+        print(variables)
+        show_variable_options(variables)
+    else:
+        variables = {}
 
+    prompt_replaced, prompt_replaced_formatted = replace_variables(prompt_text, variables.keys())
+    with st.container(border=True):
+        st.markdown(prompt_replaced_formatted)
 
-def prompt_selected(prompt_name: str, prompt_description: str, prompt_text: str):
-    # st.session_state.prompt_name = prompt_name
-    # st.session_state.prompt_text = prompt_text
-    show_prompt(prompt_name, prompt_description, prompt_text)
-
+    clipboard(prompt_replaced, before_copy_label="Copy to clipboard", after_copy_label="Copied!")
 
 def init_session_state():
     if "prompt_name" not in st.session_state:
         st.session_state.prompt_name = None
     if "prompt_text" not in st.session_state:
         st.session_state.prompt_text = None
+    if "category_id" not in st.session_state:
+        st.session_state.category_id = 1
+
+def select_category(category_id: int):
+    st.session_state.category_id = category_id
 
 st.set_page_config(page_title="Prompt Library", layout="wide")
 
@@ -66,69 +127,27 @@ engine = create_enginge()
 init_session_state()
 
 
-# st.title("Prompt Library")
+def main():
+    # st.selectbox("Language", ["English", "German"])
+    # TODO: Add language selection and translate the UI elements
 
-st.selectbox("Language", ["English", "German"])
+    st.write("Categories")
+    categories = get_categories()
 
-st.write("Select the category")
-categories = get_categories()
-
-print(categories)
-category_name = st.selectbox("Categories", categories.keys())
-category_id = categories[category_name]
-
-with st.container():
-    st.write("Select a prompt")
-    prompts = get_prompts(category_id)
-
-    columns =  st.columns(3)
+    columns = st.columns(8)
     col_idx = 0
+    for category_name, category_id in categories.items():
+        button_type = "primary" if category_id == st.session_state.category_id else "secondary"
+        columns[col_idx].button(category_name, type=button_type, on_click=select_category, args=(category_id,))
+        col_idx = (col_idx + 1) % len(columns)
 
-    for prompt_name, prompt_description, prompt_text in prompts:
-        with columns[col_idx]:
-            col_idx = (col_idx + 1) % len(columns)
+    with st.container():
+        st.write("Select a prompt")
+        prompts = get_prompts(st.session_state.category_id)
 
-            card(
-                prompt_name,
-                prompt_description,
-                on_click=lambda: show_prompt(prompt_name, prompt_description, prompt_text),
-                key=prompt_name,
-                styles={
-                    "card": {
-                        "width": "300px", 
-                        "height": "200px", 
-                        "border-radius": "10px",
-                        "padding": "10px",
-                        "margin": "10px",
-                        "box-shadow": "0 0 10px rgba(0,0,0,0.5)",
-                        "background-image": "linear-gradient(45deg, #fd7014, #fd8f47)",
-                        ":hover": {
-                            "background-image": "linear-gradient(45deg, #dc5802, #fd7014)",
-                        },
-                        "div": {
-                            "background-color": "rgba(0,0,0,0)",
+        for prompt_name, prompt_description, prompt_text in prompts:
+            if st.button(f"**{prompt_name}**: {prompt_description}"):
+                show_prompt(prompt_name, prompt_description, prompt_text)
 
-                        },
-                    },
-                    "text": {
-                        "font-family": "sans-serif",
-                        "font-size": "1.25em",
-                    },
-                    "title": {
-                        "font-family": "sans-serif",
-                        "font-size": "2em",
-                    },
-                }
-                )
-
-            # card_clicked = st.button(prompt_name)
-                
-            # print(card_clicked)
-            # if card_clicked:
-            #     print("card clicked", prompt_name)
-            #     try:
-            #         # show_prompt(prompt_name, prompt_description, prompt_text)
-            #         print("CLICKED", prompt_name)
-            #         st.rerun()
-            #     except StreamlitAPIException as e:
-            #         print("Ignoring exception from streamlit (cards causes dialog to reopen)")
+if __name__ == "__main__":
+    main()
