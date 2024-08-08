@@ -1,0 +1,30 @@
+{
+    "Language": {
+        "en": "Language",
+        "de": "Sprache"
+    },
+    "Categories": {
+        "en": "Categories",
+        "de": "Kategorien"
+    },
+    "Select a prompt": {
+        "en": "Select a prompt",
+        "de": "W\u00e4hle einen Prompt"
+    },
+    "Copy your prompt": {
+        "en": "Copy",
+        "de": "Kopieren"
+    },
+    "Copy to clipboard": {
+        "en": "Copy to clipboard",
+        "de": "Kopieren"
+    },
+    "Copied!": {
+        "en": "Copied!",
+        "de": "Kopiert!"
+    },
+    "All": {
+        "en": "All",
+        "de": "Alle"
+    }
+}
