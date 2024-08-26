@@ -1,6 +1,5 @@
 import re
 import streamlit as st
-# from st_copy_to_clipboard import st_copy_to_clipboard as clipboard
 
 from db import get_engine, Prompt, Category, PromptCategoryLink
 from sqlmodel import Session, select
@@ -71,16 +70,6 @@ def has_variables(prompts):
 
 def replace_variables(prompt_text, variables):
     pattern = r"\{(\w+)(?::\s*([^}]+))?\}"
-    
-    def replacer(match):
-        variable = match.group(1)
-        if variable in variables:
-            variable_value = st.session_state.get(variable, "")
-            if variable_value == "Other" or variable_value == "Andere":
-                variable_value = st.session_state.get(variable+"_other", "")
-            return variable_value
-        else:
-            return match.group(0)  # If no replacement is found, return the original match
 
     def replacer_formatted(match):
         variable = match.group(1)
@@ -93,11 +82,10 @@ def replace_variables(prompt_text, variables):
             return variable_value
         else:
             return match.group(0)  # If no replacement is found, return the original match
-    
-    result = re.sub(pattern, replacer, prompt_text)
+
     result_formatted = re.sub(pattern, replacer_formatted, prompt_text)
     result_formatted = result_formatted.replace("\n", "  \n")
-    return result, result_formatted
+    return result_formatted
 
 
 def show_variable_options(variables):
@@ -122,11 +110,9 @@ def show_prompt(prompt_name, prompt_description, prompt_text):
     else:
         variables = {}
 
-    prompt_replaced, prompt_replaced_formatted = replace_variables(prompt_text, variables.keys())
+    prompt_replaced_formatted = replace_variables(prompt_text, variables.keys())
     with st.container(border=True):
         st.markdown(prompt_replaced_formatted)
-
-    # clipboard(prompt_replaced, before_copy_label=_t("Copy to clipboard"), after_copy_label=_t("Copied!"))
 
 def init_session_state():
     if "prompt_name" not in st.session_state:
