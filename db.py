@@ -1,8 +1,6 @@
 from sqlmodel import Field, SQLModel, create_engine, Relationship
-
 from datetime import datetime
 
-print("IMPORTING db.py")
 
 class PromptCategoryLink(SQLModel, table=True):
     prompt_id: int | None = Field(default=None, foreign_key="prompt.id", primary_key=True)
@@ -28,8 +26,6 @@ class Prompt(SQLModel, table=True):
     date_added: datetime = Field(default=datetime.now())
 
     categories: list["Category"] = Relationship(back_populates="prompts", link_model=PromptCategoryLink)
-
-
 
 
 

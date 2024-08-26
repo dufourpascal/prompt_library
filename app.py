@@ -1,24 +1,18 @@
 import re
 import streamlit as st
 
-from db import get_engine, Prompt, Category, PromptCategoryLink
 from sqlmodel import Session, select
+from db import get_engine, Prompt, Category, PromptCategoryLink
 
 from localization import init_localization
 
 
-# @st.cache_resource()
-def create_enginge():
-    return get_engine()
-
-# @st.cache_data()
 def get_session():
-    engine = create_enginge()
+    engine = get_engine()
     return Session(engine)
 
-# @st.cache_data()
 def get_categories() -> dict[str, int]:
-    engine = create_enginge()
+    engine = get_engine()
     with Session(engine) as session:
         statement = select(Category)
         categories = session.exec(statement).fetchall()
@@ -28,9 +22,8 @@ def get_categories() -> dict[str, int]:
             categories_formatted = {category.name_en: category.id for category in categories}
         return categories_formatted
 
-# @st.cache_data()
 def get_prompts(category_id: int, filter: str = "") -> list[(str, str, str)]:
-    engine = create_enginge()
+    engine = get_engine()
     with Session(engine) as session:
         if category_id == 0:
             statement = select(Prompt).limit(200)
@@ -53,7 +46,6 @@ def get_prompts(category_id: int, filter: str = "") -> list[(str, str, str)]:
                                  if filter_lc in prompt[0].lower()
                                  if filter_lc in prompt[0].lower()]
         return prompts_formatted
-
 
 def get_variables(prompt):
     variables = {}
@@ -86,7 +78,6 @@ def replace_variables(prompt_text, variables):
     result_formatted = re.sub(pattern, replacer_formatted, prompt_text)
     result_formatted = result_formatted.replace("\n", "  \n")
     return result_formatted
-
 
 def show_variable_options(variables):
     for variable, values in variables.items():
@@ -129,14 +120,10 @@ def select_category(category_id: int):
 
 st.set_page_config(page_title="Prompt Library", layout="wide")
 
-engine = create_enginge()
-
 init_session_state()
 _t = init_localization()
 
 def main():
-    # language = st.selectbox("Language", ["English", "German"])
-    # st.session_state.language = st.radio("Language", ["English", "German"])
     st.write(_t("Categories"))
     categories = get_categories()
 
