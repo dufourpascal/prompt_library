@@ -1,13 +1,11 @@
 import re
 import streamlit as st
-from st_copy_to_clipboard import st_copy_to_clipboard as clipboard
+# from st_copy_to_clipboard import st_copy_to_clipboard as clipboard
 
 from db import get_engine, Prompt, Category, PromptCategoryLink
 from sqlmodel import Session, select
 
 from localization import init_localization
-
-
 
 
 # @st.cache_resource()
@@ -128,7 +126,7 @@ def show_prompt(prompt_name, prompt_description, prompt_text):
     with st.container(border=True):
         st.markdown(prompt_replaced_formatted)
 
-    clipboard(prompt_replaced, before_copy_label=_t("Copy to clipboard"), after_copy_label=_t("Copied!"))
+    # clipboard(prompt_replaced, before_copy_label=_t("Copy to clipboard"), after_copy_label=_t("Copied!"))
 
 def init_session_state():
     if "prompt_name" not in st.session_state:
