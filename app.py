@@ -113,7 +113,7 @@ def show_variable_options(variables):
         else:
             st.text_input(variable, key=variable)
 
-@st.experimental_dialog("Prompt", width="large", )
+@st.dialog("Prompt", width="large", )
 def show_prompt(prompt_name, prompt_description, prompt_text):
     st.subheader(prompt_name)
     st.write(prompt_description)
