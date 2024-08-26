@@ -49,6 +49,16 @@ def init_localization():
     localization = Localization(st.session_state.language)
     _ = Localization(st.session_state.language).translate
 
-    index = localization.get_languages().index(st.session_state.language)
-    st.sidebar.selectbox(_("Language"), options=localization.get_languages(), index=index, key="language")
+    st.markdown(
+        """
+        <style>
+            section[data-testid="stSidebar"] {
+                width: 100px !important; # Set the width to your desired value
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.sidebar.selectbox(_("Language"), options=localization.get_languages(), key="language")
     return _
