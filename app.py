@@ -140,7 +140,7 @@ def main():
     st.write(_t("Categories"))
     categories = get_categories()
 
-    columns = st.columns(8)
+    columns = st.columns(5)
     
     all_category_id = 0
     button_type = "primary" if all_category_id == st.session_state.category_id else "secondary"
